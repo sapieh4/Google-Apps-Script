@@ -1,0 +1,156 @@
+function allscript(e){
+  
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var SheetName = sheet.getSheetName();
+  var row = e.range.getRow();
+
+  if (SheetName != 'Complaints / Incidents' || row <3) //
+  return; 
+
+    var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Complaints / Incidents");
+    var range = ss.getActiveRange();
+    var curCell = range.getCell(1, 1);
+    var row = curCell.getRow();
+    var col = curCell.getColumn();
+    var activeCell = ss.getActiveCell();
+    var datass = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("List");
+
+    
+
+      //==========================================================
+        if (col === 3 ) {
+          ss.getRange(row, 37).setValue(new Date());
+        
+
+        if (activeCell.getValue() === "Complaint with compensation" ) {
+              Browser.msgBox("Don't forget to fill Requested compensation at row "+row);
+            }}
+        
+        
+        if (col === 22 && ss.getRange(row, 25).getValue() == "")  
+        {
+          ss.getRange(row, 25).setValue(new Date());
+        }
+
+        if (col === 4 ) {
+          Logger.log(FixDateInLegalFormat)
+          activeCell.setValue(FixDateInLegalFormat());
+        }
+        
+      //==========================================================
+        if(col == 14 ){
+          
+          activeCell.offset(0, 1).clearContent();
+          var departaments = datass.getRange(1, 16, 1, 22).getValues(); //Range of departaments
+          var makeIndex = departaments[0].indexOf(activeCell.getValue()) + 1;
+          if(makeIndex != 0){
+              var validationRange = datass.getRange(2, makeIndex + 15, datass.getLastRow()); //Need to be changed if numbers of collumns increses
+              var validationRule = SpreadsheetApp.newDataValidation().requireValueInRange(validationRange).build();
+              activeCell.offset(0, 1).setDataValidation(validationRule);
+          }  
+        }
+        
+        //==========================================================
+        if(col == 19 ){
+
+          activeCell.offset(0, 1).clearContent();
+          var departaments1 = datass.getRange(1, 27, 1, 37).getValues(); //Range of departaments
+          var makeIndex = departaments1[0].indexOf(activeCell.getValue()) + 1;
+          if(makeIndex != 0){
+              var validationRange = datass.getRange(2, makeIndex + 26, datass.getLastRow()); //Need to be changed if numbers of collumns increses
+              var validationRule = SpreadsheetApp.newDataValidation().requireValueInRange(validationRange).build();
+              activeCell.offset(0, 1).setDataValidation(validationRule);
+          }  
+        }
+
+
+
+///// Send E-mail------------------------------------------------------------------------------------------------------------------------------------------        
+
+        if (col === 14)  
+            {
+              var ssEmail = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Complaints / Incidents")
+              var Emaildepart = ss.getRange(row, 14).getValue()              
+              var EmailsDataSS = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("List")
+              var EmailsForDepart = EmailsDataSS.getRange(1, 44, 1, 9).getValues(); //Range of departaments
+
+              var makeIndexEmail = EmailsForDepart[0].indexOf(Emaildepart);
+
+                if(makeIndexEmail != 0){
+                var adressesTO = EmailsDataSS.getRange(2 , 44 + makeIndexEmail).getValue()
+                var adressesCC = EmailsDataSS.getRange(3 , 44 + makeIndexEmail).getValue()
+
+                }
+              
+              var msgbx = Browser.msgBox("Email","Would you like to send email to "+Emaildepart+" ("+ adressesTO + "; " + adressesCC + ") ?",Browser.Buttons.YES_NO)
+
+              Logger.log(msgbx)
+
+              if (msgbx == "yes") {
+
+
+                GmailApp.sendEmail(adressesTO, "New complain for " + Emaildepart, "New complain registered for comapany " + ss.getRange(row, 6).getValue() + " ( row " + row + " ). \nCheck at: https://docs.google.com/spreadsheets/d/1h32AI2sKG3fTNbqCujMd35BpOt-BmbbBGJAzbFQjmwI/edit#gid=1583990520" , {name: 'Automatic Emailer Script', cc: adressesCC} )
+                
+                 
+                ssEmail.getRange(row, 36).setValue(new Date())
+                
+                Browser.msgBox("Email with complain was sent")
+
+              }
+            }
+
+
+
+
+
+
+//Protect row-----------------------------------------------------------------------------------------------------------------------------
+
+
+if (col === 1 && (ss.getRange(row, 1).getValue() == "Completed" || ss.getRange(row, 1).getValue() == "Need project" || ss.getRange(row, 1).getValue() == "Project done" )){
+
+
+
+var RangeToProtect = ['A'+row + ":A" + row , 'C'+ row + ":F" + row, 'H' + row + ":K" + row, 'N' + row + ":X" + row, 'Z' + row + ":AD" + row];
+
+//RangeToProtect.protect().setDescription('Sample protected range');
+
+
+Logger.log(RangeToProtect)
+
+            for (var i = 0; i < RangeToProtect.length; i++){
+              //logger.log(i)
+               var p = ss.getRange(RangeToProtect[i]).protect().setDescription('Complaint closed');
+                    p.addEditor("evelina.racevic@bunasta.eu")
+            }
+
+}
+
+
+//Unprotect row-----------------------------------------------------------------------------------------------------------------------------
+if (col === 1 && (ss.getRange(row, 1).getValue() == "In progress" || ss.getRange(row, 1).getValue() == "Waiting answer" || ss.getRange(row, 1).getValue() == "Done" ))  {
+
+
+
+var allProtections = ss.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+
+Logger.log(allProtections[0].getRange().getA1Notation())
+
+var RangeToProtect = ['A'+row , 'C'+ row + ":F" + row, 'H' + row + ":K" + row, 'N' + row + ":X" + row, 'Z' + row + ":AD" + row];
+
+            for (var i = 0; i < allProtections.length; i++){              
+              var r = allProtections[i].getRange().getA1Notation();
+
+              for (var x = 0; x < RangeToProtect.length; x++){
+                  z = RangeToProtect[x]
+               if (r == z) { 
+                  var protection = allProtections[i]
+                  protection.remove();
+                }
+
+              }
+                
+            }
+}
+
+}
